@@ -1,0 +1,131 @@
+PARTE 1 : server;
+
+1 set of the folder structure "public for html and cdd" "src for js index and server and component"
+2 npm init in the project folder with installing the needed files like express, react, react-dom, body-parser ex... 
+3 "new" in the package-json set the type:"module" and the script:{"dev" : "node --watch server.js" } by setting the script to this it will keep track of all changes whthin the server
+4 "new" when you have multiple pages files ex : /api/v1 and /api/v2 etc.. it will be paintfull and very messy if you just make mistake in 1 typo like insted of v2 you make 1 
+the solution is to make group of router by using app.use('you router group ex /api/v1', router (this is it new name)) and by that you the app change to router here full ex: 
+5 to use data from json to express you need to convert it and this is by using 
+app.use(express.json());
+6 when you wanna make a filter (specific get) need to target with specific id we can use in our case the    "req.params.id" this to access the URL and get from it data same as req.body sauf the body take from body this will return a string but we need it as number so use js Number(req.params.id); thene use the find function  full ex : 
+
+router.get("/:id", (req, res) => {
+    const id = Number(req.params.id);   ==> to get the id from the URL
+    const car = cars.find((car) => car.id === id) ==> to find it if exist in the cars arr
+    if (!car) {
+        return res.status(404).send('car not found'); 
+    }  ==> err handeling if not so retur err
+    res.json(car) ==> return the target car
+});
+
+
+7 to post "add new data" from the user need to get the data wanna odd from the body thene push it to the old arr and render it here full ex : 
+
+router.post("/", (req, res) => {
+    const { name, model, year, price } = req.body ==> get the new from the body
+
+    if (!name || !model || !year || !price) {
+        res.status(400).json({ error: "Missing data" })
+    } ==> handeling the err in case user not field everythind
+
+
+    const newCar = {
+        id: cars.length + 1,
+        name,
+        model,
+        year: Number(year),
+        price: Number(price),
+    }  ==> make new obj based on user data 
+    cars.push(newCar); ==> push the new data 
+    res.status(201).json(newCar) ==> render the new data
+});
+
+
+8 to update data need to put the data the put is way to change a specific target in the obj of the arr not the intire obj but specific key in it the target will get from the URL the editing will come from the body here a full ex : 
+
+router.put("/:id", (req, res) => {
+    const id = Number(req.params.id); ==> get the data wanna change from the URL 
+    const updateCarsIndex = cars.findIndex((car) => { return car.id === id }) ==> find the index of the data in the main arr to edit it 
+
+    if (updateCarsIndex === -1) {
+        res.status(404).send({ error: "car not exist" })
+    } ==> handeling err in case no data
+
+    const { name, model, year, price } = req.body ==> init the data that need to be field from user to have access to update it
+
+    if (name) {
+        return cars[name] = name
+    }
+    if (model) {
+        return cars[model] = model
+    }
+
+    if (year) {
+        return cars[year] = year
+    }
+    if (price) {
+        return cars[price] = price
+    } 
+    ==> if condition for each because here user can edit on of theme and no need to be all of theme
+
+    res.json(cars[updateCarsIndex]); ==> render the arr with new data
+});
+
+9 after set all the API the website need a log in setup even with app growing will take log of hard codding so need to be more auto not doing it inside every single route  so to solve this need to use middleware and this is a custom middleware here ex traking the login of user here ex : : 
+
+
+app.use((req, res, next) => {
+    const timestamp = new Date().toISOString(); ==> a time function format to know the exact time here ex about the toISOString() how it look like "2026-03-29T15:30:45.123Z"
+
+    console(`[${timestamp}] ${req.method} ${req.url}`) ==> a log give use info about time methode and url 
+    next(); ==> this function from express tell that this middleware done it job move to the next req and igve user what it ask for
+}) ==> this is a full login tracking middleware give time with methode (get/post/put/delet) and url 
+
+this is just a log tracking middleware and you can do many many like this each about it need function 
+
+------------and by this we get done our RESTapi server done this is just theory and full explanation -------
+
+
+PARTE 2 : data base; 
+
+the CRUD by using postgreSQL 
+pro's use the RAW postgreSQL but it high risk bcs you have full power in you hande and you can do wha't ever you want so the risk is high and the misstake is high in real project's so we use :  "ORM"         Object Relational Mappers (ORM) : it make you interact with DB as object's insted of RAW SQL (models, methodes and types and everythind work behind the scenes) 2 type : 
+    1- prisma : this a new schema lang so totaly dif to SQL so need to learn about it but it more simple and easy  to RAW SQL
+    2- Drizzle ORM : it's the frindly version of SQL by using typeScript to write SQL and it's almost write SQL in TS form so SQL with dif frindly typing methode so simple + power + flixible + trasparancy
+steps to start work :
+1 we gonna use neon as postgreSQL DB holder it have it own AWS auth so high secure 
+2 to work with Drizzle so need to download it go to neon docs and search for drizzle to see the npm 
+3 need to set drizzle.config.js file in our pj folder and by that drizzle can now the schema of it 
+4 need a db.js file to init and export our drizzle client here will import drizzle and neon and env and we set an err catch in case it not know the DATABASE_URL form our .env by this 
+if(!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required')
+5 now start create the schema of the db and this by create schema.js file in your pj folder :
+
+import { pgTable, serial, text } from 'drizzle-orm/pg-core';
+
+export const cars = pgTable('demo_users', {
+    id: serial('id').primaryKey(),
+    name: text('name'),
+}); ==> here ex of creating a table using TP  
+pgTable → used to define a PostgreSQL table
+serial → creates an auto-incrementing integer column
+text → defines a text (string) column
+cars → the JavaScript variable representing the table
+'demo_users' → the actual table name in PostgreSQL
+
+6 after create you schema you need to generate it by using drizzle everything is in the neon drizzle docs here npm you need : npx drizzle-kit generate
+7 now need to apply it  by using npx drizzle-kit migrate and by going to neon console thene table you will see you table there 
+
+-notes--------------
+- be sure that in the schema.js you are mention and init all the thing yu gonna use ex : 
+import { pgTable, serial, varchar, integer, numeric, timestamp } from 'drizzle-orm/pg-core';
+ here we set the pgtable, the serial, varchar, integer, numeric etc... if you miss one will note generate the db 
+- be sure in the drizzle.config.js to use   dialect: 'postgresql', and this init postgreSQL
+- be sure that in the drizzle.config.js the if err need to be like this : 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set in the .env file');
+}
+!process this is the right way
+---------------------
+
+8 now the linking of server with drizzle and neon is done seccesfuly now you can go to server.js and do you work about saving data in db
+ 
