@@ -25,8 +25,8 @@ router.post("/", (req, res) => {
     const { name, model, year, price } = req.body ==> get the new from the body
 
     if (!name || !model || !year || !price) {
-        res.status(400).json({ error: "Missing data" })
-    } ==> handeling the err in case user not field everythind
+        return res.status(400).json({ error: "Missing data" })
+    } ==> handeling the err in case user not field everything
 
 
     const newCar = {
@@ -48,7 +48,7 @@ router.put("/:id", (req, res) => {
     const updateCarsIndex = cars.findIndex((car) => { return car.id === id }) ==> find the index of the data in the main arr to edit it 
 
     if (updateCarsIndex === -1) {
-        res.status(404).send({ error: "car not exist" })
+        return res.status(404).send({ error: "car not exist" })
     } ==> handeling err in case no data
 
     const { name, model, year, price } = req.body ==> init the data that need to be field from user to have access to update it
@@ -89,7 +89,7 @@ this is just a log tracking middleware and you can do many many like this each a
 PARTE 2 : data base; 
 
 the CRUD by using postgreSQL 
-pro's use the RAW postgreSQL but it high risk bcs you have full power in you hande and you can do wha't ever you want so the risk is high and the misstake is high in real project's so we use :  "ORM"         Object Relational Mappers (ORM) : it make you interact with DB as object's insted of RAW SQL (models, methodes and types and everythind work behind the scenes) 2 type : 
+pro's use the RAW postgreSQL but it high risk bcs you have full power in you hande and you can do wha't ever you want so the risk is high and the misstake is high in real project's so we use :  "ORM"         Object Relational Mappers (ORM) : it make you interact with DB as object's insted of RAW SQL (models, methodes and types and everything work behind the scenes) 2 type : 
     1- prisma : this a new schema lang so totaly dif to SQL so need to learn about it but it more simple and easy  to RAW SQL
     2- Drizzle ORM : it's the frindly version of SQL by using typeScript to write SQL and it's almost write SQL in TS form so SQL with dif frindly typing methode so simple + power + flixible + trasparancy
 steps to start work :
@@ -127,5 +127,75 @@ if (!process.env.DATABASE_URL) {
 !process this is the right way
 ---------------------
 
-8 now the linking of server with drizzle and neon is done seccesfuly now you can go to server.js and do you work about saving data in db
- 
+8 now the linking of server with drizzle and neon is done seccesfuly now you can go to server.js and do you work about saving data in db here big ex : 
+
+import { eq } from "drizzle-orm";
+
+router.get("/", async (req, res) => {
+    const allCars = await db.select().from(cars)
+    res.json(allCars);
+});
+
+router.get("/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    const selectedCar = await db.select().from(cars).where(eq(cars.id, id))
+    if (selectedCar.length === 0) {
+        return res.status(404).send('car not found');
+    }
+    res.json(selectedCar)
+});
+
+router.post("/", async (req, res) => {
+    const { name, model, year, price } = req.body
+
+    if (!name || !model || !year || !price) {
+        return res.status(400).json({ error: "Missing data" })
+    }
+
+    const [newCar] = await db.insert(cars).values({ name, model, year, price }).returning();
+
+    res.status(201).json(newCar)
+});
+
+
+router.put("/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    const { name, model, year, price } = req.body
+
+    const updatedCars = await db
+        .update(cars)
+        .set({ name, model, year, price })
+        .where(eq(cars.id, id))
+        .returning()
+
+    if (updatedCars === 0) {
+        return res.status(404).send({ error: "car not exist" })
+    }
+
+    res.json(updatedCars[0]);
+});
+
+router.delete("/:id", async (req, res) => {
+    const id = Number(req.params.id)
+    const deletCar = await db.delete(cars).where(eq(cars.id, id)).returning();
+
+    if (deletCar.length === 0) {
+        return res.status(404).json({ error: "car not found" })
+    }
+
+    res.json({ message: "delete successfully", car: deletCar[0] });
+});
+
+----------------------------------big nooooooooooooooooootttttttttttttteeeeeeeeeeee----------------
+- be very very carful about every return in everything in this pj have big misstake which is 
+the return in API so :
+1 use the short way of writhing the return 
+2 use the completed for of the return 
+- be very carful to import the based form the schema.js in our pj is cars so be carful of return and importing
+3 the cars.id = id is not used in drizzle in drizzle have eq() and import it in the first step 
+eq(cars.id, id) 
+---------------------------------------------------------------------------------------------------
+
+
+
+

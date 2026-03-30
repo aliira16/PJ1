@@ -1,5 +1,7 @@
 import express, { Router } from "express"
 import { db } from "../db.js";
+import { cars } from "../schema.js";
+import { eq } from "drizzle-orm";
 
 const app = express();
 app.use(express.json());
@@ -15,30 +17,25 @@ app.use((req, res, next) => {
     next();
 })
 
-let cars = [
-    { id: 1, name: "toyota", model: "yarisGR", year: 2024, price: 32000 },
-    { id: 2, name: "nissan", model: "patrom", year: 2023, price: 70000 },
-    { id: 3, name: "BMW", model: "M5", year: 2024, price: 62000 }
-]
-
-router.get("/", (req, res) => {
-    res.json(cars);
+router.get("/", async (req, res) => {
+    const allCars = await db.select().from(cars)
+    res.json(allCars);
 });
 
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const car = cars.find((car) => car.id === id)
-    if (!car) {
+    const selectedCar = await db.select().from(cars).where(eq(cars.id, id))
+    if (selectedCar.length === 0) {
         return res.status(404).send('car not found');
     }
-    res.json(car)
+    res.json(selectedCar)
 });
 
 router.post("/", async (req, res) => {
     const { name, model, year, price } = req.body
 
     if (!name || !model || !year || !price) {
-        res.status(400).json({ error: "Missing data" })
+        return res.status(400).json({ error: "Missing data" })
     }
 
     const [newCar] = await db.insert(cars).values({ name, model, year, price }).returning();
@@ -47,45 +44,32 @@ router.post("/", async (req, res) => {
 });
 
 
-router.put("/:id", (req, res) => {
+router.put("/:id", async (req, res) => {
     const id = Number(req.params.id);
-    const updateCarsIndex = cars.findIndex((car) => { return car.id === id })
-
-    if (updateCarsIndex === -1) {
-        res.status(404).send({ error: "car not exist" })
-    }
-
     const { name, model, year, price } = req.body
 
-    if (name) {
-        return cars[name] = name
-    }
-    if (model) {
-        return cars[model] = model
+    const updatedCars = await db
+        .update(cars)
+        .set({ name, model, year, price })
+        .where(eq(cars.id, id))
+        .returning()
+
+    if (updatedCars === 0) {
+        return res.status(404).send({ error: "car not exist" })
     }
 
-    if (year) {
-        return cars[year] = year
-    }
-    if (price) {
-        return cars[price] = price
-    }
-
-
-    res.json(cars[updateCarsIndex]);
+    res.json(updatedCars[0]);
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
     const id = Number(req.params.id)
-    const deletCar = cars.findIndex((car) => { return car.id === id })
+    const deletCar = await db.delete(cars).where(eq(cars.id, id)).returning();
 
-    if (id === -1) {
-        res.status(404).json({ error: "car not found" })
+    if (deletCar.length === 0) {
+        return res.status(404).json({ error: "car not found" })
     }
 
-    cars.splice(deletCar, 1);
-
-    res.json(cars);
+    res.json({ message: "delete successfully", car: deletCar[0] });
 });
 
 app.use('/api/v1/cars', router);
