@@ -196,6 +196,98 @@ the return in API so :
 eq(cars.id, id) 
 ---------------------------------------------------------------------------------------------------
 
+PARTE 3 : React and FrontEnd;
+
+1 install the vite in your VsCode terminal by :
+npm create vite@latest
+this will auto make everything for you and will give you a local host url to use it as preview
+
+2 to set up a blanck page go and delete the app.css and clean the index.css and app.jsx and start your own
+
+3 now need to link the FrontEnd (react) with the backEnd (server) and this by fetch the data from the API directly by using useState and useEffect here a full ex: 
+
+  const [cars, setCars] = useState([]);
+
+  useEffect(() => {
+    fetch('api/v1/cars')
+      .then(res => res.json())
+      .then(data => setCars(data))
+      .catch(err => console.log(err));
+    }, [])
+    
+    console.log(cars);
+
+but first need to allowed the fitch so the browser can trust the linking between the 2 links        the 5173 "FrontEnd" and 3000 "backEnd and we do this in the vite.config.js by setting 
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: { ==> set new server 
+    proxy: { ==> proxy to fitch
+      '/api': { ==> what we gonna use in our App.jsx
+        target: 'http://localhost:3000', ==> what it really target
+        changeOrigin: true, ==> and here set it to true so trust
+      }
+    }
+  }
+});
+
+4 create your components folder in src and component fils for ex here we make Car.jsx 
+5 import the React in the component file and set your code and export the function you made it here full ex:
+
+import React from "react"
+const Car = ({ name, model, year, price }) => {
+    console.log("car is work")
+    return (
+        <div>
+            <h1>name: {name}</h1>
+            <h4>model: {model}</h4>
+            <p>Year: {year}</p>
+            <p>Price: {price}</p>
+        </div>
+    )
+}
+
+export default Car;
+
+6 import the file to the App.jsx and be carful about the typo here ex : 
+import Car from "./components/Car" 
+-------note ---------------------------
+be carfuuuuuuuuuuul in the import sometimes you miss and set it as "./components./Car" be carful the correct one is the one in the ex
+---------------------------------------
+7 now showe the data by send it to component file as props and map it in the app here a full ex : 
+
+import React, { useEffect, useState } from "react";
+import Car from "./components/Car"
+
+const App = () => {
+  const [cars, setCars] = useState([]);
+
+  useEffect(() => {
+    fetch('api/v1/cars')
+      .then(res => res.json())
+      .then(data => setCars(data))
+      .catch(err => console.log(err));
+  }, [])
+
+  console.log(cars);
+  return (
+    <div>
+      {cars.map((car) => { return <Car key={car.id} {...car} /> })}
+    </div> 
+  )
+}
+
+export default App;
+
+--------------------------------CONGRATUMATION now you have a full PERN based setUp APP--------------------------
+
+
+  
+
 
 
 
